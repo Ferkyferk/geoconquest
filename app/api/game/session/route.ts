@@ -1,6 +1,15 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import {
+  getAuthUser,
+  ok,
+  unauthorized,
+  badRequest,
+  serverError,
+  isPositiveInt,
+  isPositiveFloat,
+  isStringArray,
+  todayUTC,
+} from '@/lib/api-helpers'
 
 interface SaveSessionBody {
   score: number
@@ -11,49 +20,70 @@ interface SaveSessionBody {
   maxStreak: number
 }
 
+function validateBody(body: unknown): body is SaveSessionBody {
+  if (!body || typeof body !== 'object') return false
+  const b = body as Record<string, unknown>
+  return (
+    isPositiveInt(b.score) &&
+    isStringArray(b.countriesConquered) &&
+    isPositiveInt(b.continentsConquered) &&
+    isPositiveInt(b.livesRemaining) &&
+    isPositiveFloat(b.maxMultiplier) &&
+    isPositiveInt(b.maxStreak) &&
+    b.countriesConquered.length <= 300 &&
+    (b.livesRemaining as number) <= 10 &&
+    (b.maxMultiplier as number) <= 50
+  )
+}
+
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const user = await getAuthUser()
+  if (!user) return unauthorized()
 
-  if (!session?.user?.id) {
-    return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return badRequest('Request body must be valid JSON')
   }
 
-  const body: SaveSessionBody = await req.json()
+  if (!validateBody(body)) {
+    return badRequest('Invalid payload — check score, countriesConquered, continentsConquered, livesRemaining, maxMultiplier, maxStreak')
+  }
+
   const { score, countriesConquered, continentsConquered, livesRemaining, maxMultiplier, maxStreak } = body
+  const date = todayUTC()
+  const userId = user.id
 
-  if (typeof score !== 'number' || !Array.isArray(countriesConquered)) {
-    return Response.json({ success: false, error: 'Invalid payload' }, { status: 400 })
+  try {
+    const [gameSession] = await prisma.$transaction([
+      prisma.gameSession.create({
+        data: {
+          userId,
+          date,
+          score,
+          countriesConquered: JSON.stringify(countriesConquered),
+          continentsConquered,
+          livesRemaining,
+          maxMultiplier,
+          maxStreak,
+        },
+      }),
+      prisma.dailyScore.upsert({
+        where: { userId_date: { userId, date } },
+        update: { score: { set: score } },
+        create: { userId, date, score },
+      }),
+    ])
+
+    // Keep only the best score for the day
+    await prisma.dailyScore.updateMany({
+      where: { userId, date, score: { lt: score } },
+      data: { score },
+    })
+
+    return ok({ sessionId: gameSession.id })
+  } catch (err) {
+    return serverError(err)
   }
-
-  const date = new Date().toISOString().split('T')[0]
-  const userId = session.user.id
-
-  const [gameSession] = await prisma.$transaction([
-    prisma.gameSession.create({
-      data: {
-        userId,
-        date,
-        score,
-        countriesConquered: JSON.stringify(countriesConquered),
-        continentsConquered,
-        livesRemaining,
-        maxMultiplier,
-        maxStreak,
-      },
-    }),
-    // Keep the best score for the day
-    prisma.dailyScore.upsert({
-      where: { userId_date: { userId, date } },
-      update: { score: { set: score } }, // overwrite only if higher (handled below)
-      create: { userId, date, score },
-    }),
-  ])
-
-  // If the upserted daily score is lower than today's best, restore it
-  await prisma.dailyScore.updateMany({
-    where: { userId, date, score: { lt: score } },
-    data: { score },
-  })
-
-  return Response.json({ success: true, data: { sessionId: gameSession.id } })
 }

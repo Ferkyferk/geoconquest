@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
 
-  "buildCommand": "prisma db push && next build",
+  "buildCommand": "prisma generate && prisma migrate deploy && next build",
 
   "functions": {
     "app/api/**": {
