@@ -212,10 +212,11 @@ export default function LeaderboardPage() {
         <div className="mx-auto flex max-w-xl items-center gap-4 px-4 py-3">
           <button
             onClick={() => router.push('/')}
-            className="text-game-muted hover:text-game-text transition-colors text-sm"
+            className="flex items-center gap-1.5 text-game-muted hover:text-game-gold transition-colors text-sm font-barlow group"
             aria-label="Back to menu"
           >
-            ←
+            <span className="inline-block transition-transform group-hover:-translate-x-0.5">←</span>
+            <span className="text-xs tracking-wide uppercase">Menu</span>
           </button>
           <h1 className="font-cinzel font-black text-game-gold tracking-widest text-base flex-1 text-center">
             LEADERBOARD
