@@ -49,7 +49,8 @@ export async function GET() {
       },
     })
 
-    const friends = friendships.map((f) => ({
+    type FriendshipWithFriend = typeof friendships[number]
+    const friends = friendships.map((f: FriendshipWithFriend) => ({
       userId:       f.friend.id,
       name:         f.friend.name ?? 'Anonymous',
       image:        f.friend.image,
@@ -64,14 +65,15 @@ export async function GET() {
     }))
 
     // Sort friends: played today first (by score desc), then those who haven't
-    friends.sort((a, b) => {
+    friends.sort((a: typeof friends[number], b: typeof friends[number]) => {
       if (a.todayScore !== null && b.todayScore !== null) return b.todayScore - a.todayScore
       if (a.todayScore !== null) return -1
       if (b.todayScore !== null) return  1
       return 0
     })
 
-    const pending = pendingInbound.map((p) => ({
+    type PendingWithUser = typeof pendingInbound[number]
+    const pending = pendingInbound.map((p: PendingWithUser) => ({
       requestId:  p.id,
       fromUserId: p.user.id,
       fromName:   p.user.name ?? 'Anonymous',
