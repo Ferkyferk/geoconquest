@@ -8,7 +8,7 @@ import {
 // ── Data integrity ─────────────────────────────────────────────────────────
 
 describe('country data integrity', () => {
-  test('has 178 countries', () => expect(countries).toHaveLength(178));
+  test('has 196 countries', () => expect(countries).toHaveLength(196));
 
   test('all neighbor ISO codes exist in the dataset', () => {
     const allIsos = new Set(countries.map((c) => c.iso));

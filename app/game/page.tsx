@@ -102,6 +102,7 @@ export default function GamePage() {
   const [message, setMessage]         = useState<UIMessage | null>(null);
   const [prevScore, setPrevScore]     = useState(0);
   const [scoreAnimating, setScoreAnimating] = useState(false);
+  const [continentAlert, setContinentAlert] = useState<{ continent: string; bonus: number } | null>(null);
   const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Derived values ────────────────────────────────────────────────────────
@@ -126,16 +127,17 @@ export default function GamePage() {
     return totals;
   }, []);
 
-  // Conquered countries grouped by continent
-  const conqueredByContinent = useMemo(() => {
+  // Territory countries grouped by continent (homeland + conquered)
+  const territoryByContinent = useMemo(() => {
     const groups: Partial<Record<Continent, string[]>> = {};
-    for (const iso of game.conquered) {
+    const allTerritory = [game.homeland, ...game.conquered];
+    for (const iso of allTerritory) {
       const c = countriesByIso[iso];
       if (!c) continue;
       (groups[c.continent] ??= []).push(iso);
     }
     return groups;
-  }, [game.conquered]);
+  }, [game.homeland, game.conquered]);
 
   // ── Score pop animation ───────────────────────────────────────────────────
   useEffect(() => {
@@ -301,6 +303,15 @@ export default function GamePage() {
 
         const totalGained = triviaScore + annexScore + bonusEarned + worldBonus;
         const targetName  = countriesByIso[game.currentTarget]?.name ?? game.currentTarget;
+
+        // Show continent bonus alert
+        if (bonusMsgs.length > 0) {
+          const newContinents = [...newBonuses].filter((c) => !continentBonuses.has(c));
+          if (newContinents.length > 0) {
+            setContinentAlert({ continent: newContinents[0], bonus: bonusEarned });
+            setTimeout(() => setContinentAlert(null), 4000);
+          }
+        }
 
         setContinentBonuses(newBonuses);
         setGame((prev) => ({
@@ -565,14 +576,14 @@ export default function GamePage() {
               </div>
 
               {/* Conquered territories — grouped by continent */}
-              {game.conquered.length > 0 && (
+              {(game.conquered.length > 0 || game.homeland) && (
                 <div className="flex flex-col gap-3">
                   <p className="text-[10px] font-semibold tracking-widest text-game-muted uppercase">
-                    Conquered &middot; {game.conquered.length} {game.conquered.length === 1 ? 'country' : 'countries'}
+                    Territory &middot; {1 + game.conquered.length} {game.conquered.length === 0 ? 'country' : 'countries'}
                   </p>
 
                   {CONTINENT_ORDER.map((continent) => {
-                    const isos = conqueredByContinent[continent];
+                    const isos = territoryByContinent[continent];
                     if (!isos?.length) return null;
                     const total = continentTotals[continent] ?? 0;
                     return (
@@ -599,19 +610,23 @@ export default function GamePage() {
                           {isos.map((iso) => {
                             const c = countriesByIso[iso];
                             if (!c) return null;
+                            const isHome = iso === game.homeland;
                             return (
                               <motion.span
                                 key={iso}
                                 initial={{ scale: 0.7, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="
+                                className={`
                                   inline-flex items-center gap-1.5 rounded-full
-                                  border border-game-green/30 bg-game-green/10
-                                  px-3 py-1 text-xs font-barlow text-game-green
-                                "
+                                  px-3 py-1 text-xs font-barlow
+                                  ${isHome
+                                    ? 'border border-game-gold/40 bg-game-gold/10 text-game-gold'
+                                    : 'border border-game-green/30 bg-game-green/10 text-game-green'
+                                  }
+                                `}
                               >
                                 <span>{getFlagEmoji(iso)}</span>
-                                <span>{c.name}</span>
+                                <span>{c.name}{isHome ? ' (Home)' : ''}</span>
                               </motion.span>
                             );
                           })}
@@ -637,6 +652,45 @@ export default function GamePage() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* ── Continent Bonus Alert ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {continentAlert && (
+          <motion.div
+            key="continent-alert"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          >
+            <div className="rounded-2xl border-2 border-yellow-400/60 bg-gray-900/95 backdrop-blur-md px-8 py-6 text-center shadow-2xl shadow-yellow-400/20 pointer-events-auto">
+              <motion.div
+                initial={{ scale: 0.5, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+                className="text-5xl mb-3"
+              >
+                {CONTINENT_EMOJI[continentAlert.continent as Continent] ?? '🌍'}
+              </motion.div>
+              <p className="font-cinzel font-black text-2xl text-yellow-300 tracking-wider mb-1">
+                Continent Conquered!
+              </p>
+              <p className="font-barlow text-lg text-yellow-100/80 mb-2">
+                {continentAlert.continent}
+              </p>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="font-cinzel font-bold text-xl text-game-gold"
+              >
+                +{continentAlert.bonus} bonus pts
+              </motion.p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Result Screen ───────────────────────────────────────────────── */}
       <AnimatePresence>
