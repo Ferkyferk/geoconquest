@@ -10,7 +10,7 @@ export interface TriviaQuestion {
   question: string;
   choices: string[];
   correctAnswer: string;
-  type: 'capital' | 'continent' | 'population' | 'language' | 'currency' | 'borders';
+  type: 'capital' | 'continent' | 'population' | 'language' | 'currency' | 'borders' | 'neighbor' | 'flag-neighbor' | 'not-neighbor' | 'largest-neighbor' | 'island';
 }
 
 export interface GameState {

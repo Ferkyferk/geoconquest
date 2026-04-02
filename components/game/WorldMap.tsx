@@ -48,6 +48,23 @@ const NUMERIC_TO_ALPHA2: Record<string, string> = Object.fromEntries(
   Object.entries(ALPHA2_TO_NUMERIC).map(([a2, num]) => [num, a2])
 );
 
+// Countries too small to appear in the 110m TopoJSON — rendered as dot markers.
+// Includes microstates, small island nations, and Kosovo (split from Serbia in TopoJSON).
+const MICROSTATE_ISOS = new Set([
+  // European microstates
+  'AD', 'LI', 'MC', 'SM', 'VA', 'MT',
+  // Kosovo (not separate in 110m TopoJSON)
+  'XK',
+  // Small island nations — Asia
+  'MV', 'SG', 'BH',
+  // Small island nations — Africa
+  'CV', 'KM', 'MU', 'ST', 'SC',
+  // Small island nations — Caribbean
+  'AG', 'BB', 'BS', 'DM', 'GD', 'KN', 'LC', 'VC',
+  // Small island nations — Oceania
+  'WS', 'TO', 'KI', 'MH', 'FM', 'NR', 'PW', 'TV',
+]);
+
 // ── Colors ─────────────────────────────────────────────────────────────────
 const COLORS = {
   homeland: '#F59E0B',       // amber gold
@@ -148,11 +165,9 @@ export function WorldMap({
       .filter(Boolean);
   }, [homeland, conquered]);
 
-  // Resolve country state for styling
-  const getCountryState = useCallback(
-    (numericId: string): 'homeland' | 'conquered' | 'invadable' | 'neutral' => {
-      const iso = NUMERIC_TO_ALPHA2[numericId];
-      if (!iso) return 'neutral';
+  // Resolve country state for styling — works for both numeric TopoJSON IDs and ISO codes
+  const getCountryStateByIso = useCallback(
+    (iso: string): 'homeland' | 'conquered' | 'invadable' | 'neutral' => {
       if (iso === homeland) return 'homeland';
       if (conquered.has(iso)) return 'conquered';
       if (invadableSet.has(iso)) return 'invadable';
@@ -160,6 +175,26 @@ export function WorldMap({
     },
     [homeland, conquered, invadableSet]
   );
+
+  const getCountryState = useCallback(
+    (numericId: string): 'homeland' | 'conquered' | 'invadable' | 'neutral' => {
+      const iso = NUMERIC_TO_ALPHA2[numericId];
+      if (!iso) return 'neutral';
+      return getCountryStateByIso(iso);
+    },
+    [getCountryStateByIso]
+  );
+
+  // Microstate dot markers — countries too small for the TopoJSON
+  const microstateMarkers = useMemo(() => {
+    return [...MICROSTATE_ISOS]
+      .map((iso) => {
+        const c = countriesByIso[iso];
+        if (!c) return null;
+        return { iso, country: c };
+      })
+      .filter(Boolean) as Array<{ iso: string; country: NonNullable<typeof countriesByIso[string]> }>;
+  }, []);
 
   const getFill = (state: ReturnType<typeof getCountryState>) => {
     switch (state) {
@@ -252,7 +287,6 @@ export function WorldMap({
                     geography={geo}
                     onClick={() => handleCountryClick(numId)}
                     onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
-                      if (state !== 'homeland' && state !== 'conquered') return;
                       const name = iso ? (countriesByIso[iso]?.name ?? iso) : 'Unknown';
                       const rect = (e.target as SVGPathElement)
                         .closest('svg')
@@ -298,6 +332,58 @@ export function WorldMap({
               })
             }
           </Geographies>
+
+          {/* Dot markers for microstates & small island nations not visible in TopoJSON */}
+          {microstateMarkers.map(({ iso, country }) => {
+            const state = getCountryStateByIso(iso);
+            const fill = getFill(state);
+            const hoverFill = getHoverFill(state);
+            const isClickable = state === 'invadable';
+            const isHomeland = state === 'homeland';
+            const isNewlyConq = newlyConquered.has(iso);
+            const dotRadius = 3 / Math.sqrt(zoom);
+            return (
+              <Marker
+                key={`dot-${iso}`}
+                coordinates={[country.coordinates.lng, country.coordinates.lat]}
+              >
+                <circle
+                  cx={0}
+                  cy={0}
+                  r={dotRadius}
+                  fill={fill}
+                  stroke={COLORS.border}
+                  strokeWidth={0.3 / zoom}
+                  style={{
+                    cursor: isClickable ? 'pointer' : 'default',
+                    filter: isHomeland
+                      ? 'url(#homeland-glow)'
+                      : isNewlyConq
+                      ? 'url(#conquered-glow)'
+                      : 'none',
+                    transition: 'fill 0.3s ease',
+                  }}
+                  onClick={() => onCountryClick?.(iso)}
+                  onMouseEnter={(e: React.MouseEvent<SVGCircleElement>) => {
+                    (e.target as SVGCircleElement).setAttribute('fill', hoverFill);
+                    const name = country.name;
+                    const rect = (e.target as SVGCircleElement)
+                      .closest('svg')
+                      ?.getBoundingClientRect();
+                    setTooltip({
+                      name,
+                      x: e.clientX - (rect?.left ?? 0),
+                      y: e.clientY - (rect?.top ?? 0),
+                    });
+                  }}
+                  onMouseLeave={(e: React.MouseEvent<SVGCircleElement>) => {
+                    (e.target as SVGCircleElement).setAttribute('fill', fill);
+                    setTooltip(null);
+                  }}
+                />
+              </Marker>
+            );
+          })}
 
           {/* Dashed connection lines between adjacent territory countries */}
           {connectionPairs.map(([a, b]) => {

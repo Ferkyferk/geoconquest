@@ -1,4 +1,4 @@
-import { countries, type Country, type Continent } from '@/lib/data/countries';
+import { countries, countriesByIso, type Country, type Continent } from '@/lib/data/countries';
 import type { TriviaQuestion } from '@/lib/game/engine';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -161,31 +161,162 @@ function bordersQuestion(country: Country, seed: number): TriviaQuestion {
   };
 }
 
+/** "Which of these countries borders X?" */
+function neighborQuestion(country: Country, seed: number): TriviaQuestion | null {
+  if (country.neighbors.length === 0) return null;
+  const correctNeighborIso = seededShuffle(country.neighbors, seed)[0];
+  const correctNeighbor = countriesByIso[correctNeighborIso];
+  if (!correctNeighbor) return null;
+
+  const neighborSet = new Set(country.neighbors);
+  const distractors = pickDistractors(
+    countries,
+    (c) => c.continent === country.continent,
+    (c) => c.iso === country.iso || neighborSet.has(c.iso),
+    3,
+    seed + 2
+  ).map((c) => c.name);
+
+  const choices = seededShuffle([correctNeighbor.name, ...distractors], seed + 1);
+  return {
+    id: `${country.iso}-neighbor`,
+    type: 'neighbor',
+    question: `Which of these countries borders ${country.name}?`,
+    choices,
+    correctAnswer: correctNeighbor.name,
+  };
+}
+
+/** "Which of these countries does NOT border X?" */
+function notNeighborQuestion(country: Country, seed: number): TriviaQuestion | null {
+  if (country.neighbors.length < 2) return null;
+  const neighborSet = new Set(country.neighbors);
+
+  // Pick a non-neighbor from the same continent
+  const nonNeighbors = countries.filter(
+    (c) => c.iso !== country.iso && !neighborSet.has(c.iso) && c.continent === country.continent
+  );
+  if (nonNeighbors.length === 0) return null;
+
+  const correctNonNeighbor = seededShuffle(nonNeighbors, seed)[0];
+
+  // Pick 3 actual neighbors as distractors
+  const neighborCountries = country.neighbors
+    .map((iso) => countriesByIso[iso])
+    .filter(Boolean) as Country[];
+  const distractors = seededShuffle(neighborCountries, seed + 2).slice(0, 3).map((c) => c.name);
+
+  if (distractors.length < 3) return null;
+
+  const choices = seededShuffle([correctNonNeighbor.name, ...distractors], seed + 1);
+  return {
+    id: `${country.iso}-not-neighbor`,
+    type: 'not-neighbor',
+    question: `Which of these countries does NOT border ${country.name}?`,
+    choices,
+    correctAnswer: correctNonNeighbor.name,
+  };
+}
+
+/** "Which neighboring country of X has the largest population?" */
+function largestNeighborQuestion(country: Country, seed: number): TriviaQuestion | null {
+  const neighborCountries = country.neighbors
+    .map((iso) => countriesByIso[iso])
+    .filter(Boolean) as Country[];
+
+  if (neighborCountries.length < 4) return null;
+
+  const sorted = [...neighborCountries].sort((a, b) => b.population - a.population);
+  const correct = sorted[0];
+  const distractors = seededShuffle(sorted.slice(1), seed).slice(0, 3).map((c) => c.name);
+
+  const choices = seededShuffle([correct.name, ...distractors], seed + 1);
+  return {
+    id: `${country.iso}-largest-neighbor`,
+    type: 'largest-neighbor',
+    question: `Which neighboring country of ${country.name} has the largest population?`,
+    choices,
+    correctAnswer: correct.name,
+  };
+}
+
+/** "Is X an island nation?" — only generated for countries where the answer is interesting */
+function islandQuestion(country: Country, seed: number): TriviaQuestion | null {
+  // Curated set of island nations for generating island-related questions
+  const knownIslands = new Set([
+    'CY', 'IS', 'MT', 'CU', 'DO', 'HT', 'JM', 'TT', 'BS', 'BB', 'AG', 'DM', 'GD', 'KN', 'LC', 'VC',
+    'SG', 'LK', 'MV', 'BH', 'TW', 'PH', 'ID', 'JP', 'BN', 'TL',
+    'MG', 'MU', 'CV', 'KM', 'SC', 'ST',
+    'AU', 'NZ', 'FJ', 'PG', 'SB', 'VU', 'WS', 'TO', 'KI', 'MH', 'FM', 'NR', 'PW', 'TV',
+  ]);
+
+  const isIsland = knownIslands.has(country.iso);
+
+  // Only interesting if the answer isn't obvious
+  const sameContinent = countries.filter((c) => c.continent === country.continent && c.iso !== country.iso);
+  const islandsInContinent = sameContinent.filter((c) => knownIslands.has(c.iso));
+  const nonIslandsInContinent = sameContinent.filter((c) => !knownIslands.has(c.iso));
+
+  if (islandsInContinent.length < 1 || nonIslandsInContinent.length < 1) return null;
+
+  // Generate: "Which of these [continent] countries is an island nation?"
+  if (isIsland) {
+    const distractors = seededShuffle(nonIslandsInContinent, seed).slice(0, 3).map((c) => c.name);
+    if (distractors.length < 3) return null;
+    const choices = seededShuffle([country.name, ...distractors], seed + 1);
+    return {
+      id: `${country.iso}-island`,
+      type: 'island',
+      question: `Which of these ${country.continent === 'Americas' ? 'American' : country.continent === 'Oceania' ? 'Oceanian' : country.continent + 'n'} countries is an island nation?`,
+      choices,
+      correctAnswer: country.name,
+    };
+  }
+
+  return null;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────
 
 type QuestionType = TriviaQuestion['type'];
 
-const GENERATORS: Record<QuestionType, (c: Country, seed: number) => TriviaQuestion> = {
-  capital: capitalQuestion,
-  continent: continentQuestion,
-  population: populationQuestion,
-  language: languageQuestion,
-  currency: currencyQuestion,
-  borders: bordersQuestion,
-};
+type QuestionGenerator = (c: Country, seed: number) => TriviaQuestion | null;
 
-const QUESTION_ORDER: QuestionType[] = ['capital', 'continent', 'population', 'language', 'currency', 'borders'];
+const ALL_GENERATORS: Array<{ type: QuestionType; gen: QuestionGenerator }> = [
+  { type: 'capital', gen: capitalQuestion },
+  { type: 'continent', gen: continentQuestion },
+  { type: 'population', gen: populationQuestion },
+  { type: 'language', gen: languageQuestion },
+  { type: 'currency', gen: currencyQuestion },
+  { type: 'borders', gen: bordersQuestion },
+  { type: 'neighbor', gen: neighborQuestion },
+  { type: 'not-neighbor', gen: notNeighborQuestion },
+  { type: 'largest-neighbor', gen: largestNeighborQuestion },
+  { type: 'island', gen: islandQuestion },
+];
 
 /**
  * Generates `count` trivia questions for the given country.
- * The selection is deterministic for a given country so the same questions
- * always appear, but the 4 choices within each question are shuffled.
+ * The selection is randomized using a date-based seed combined with the
+ * country's ISO code, so the same player gets different questions each day
+ * but all players see the same questions for a given country on a given day.
  *
  * @param country  The target country being invaded.
- * @param count    Number of questions to generate (max 6, default 5).
+ * @param count    Number of questions to generate (default 5).
  */
 export function generateTriviaQuestions(country: Country, count = 5): TriviaQuestion[] {
-  const baseSeed = strToSeed(country.iso);
-  const types = QUESTION_ORDER.slice(0, Math.min(count, QUESTION_ORDER.length));
-  return types.map((type, i) => GENERATORS[type](country, baseSeed + i * 997));
+  const dateSeed = strToSeed(new Date().toISOString().split('T')[0]);
+  const baseSeed = strToSeed(country.iso) + dateSeed;
+
+  // Generate all possible questions for this country
+  const allQuestions: TriviaQuestion[] = [];
+  for (let i = 0; i < ALL_GENERATORS.length; i++) {
+    const { gen } = ALL_GENERATORS[i];
+    const q = gen(country, baseSeed + i * 997);
+    if (q) allQuestions.push(q);
+  }
+
+  // Randomly select `count` questions from the pool
+  const shuffled = seededShuffle(allQuestions, baseSeed + 7919);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
 }

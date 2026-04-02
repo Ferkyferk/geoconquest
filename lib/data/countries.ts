@@ -893,7 +893,7 @@ export const countries: Country[] = [
     population: 114000000,
     primaryLanguage: 'Filipino',
     currency: 'Philippine Peso',
-    neighbors: ['MY', 'TW', 'ID'], // island — nearest: Malaysia (Borneo) 25km, Taiwan 320km, Indonesia 450km
+    neighbors: ['MY', 'TW', 'ID', 'PW'], // island — nearest: Malaysia (Borneo) 25km, Taiwan 320km, Indonesia 450km, Palau 850km
     coordinates: { lat: 12.8797, lng: 121.774 },
   },
   {
@@ -1053,7 +1053,7 @@ export const countries: Country[] = [
     coordinates: { lat: 15.5527, lng: 48.5164 },
   },
 
-  // ─── AFRICA (52) ────────────────────────────────────────────────────────────
+  // ─── AFRICA (54) ────────────────────────────────────────────────────────────
   {
     name: 'Algeria',
     iso: 'DZ',
@@ -1174,7 +1174,7 @@ export const countries: Country[] = [
     population: 870000,
     primaryLanguage: 'Comorian',
     currency: 'Comorian Franc',
-    neighbors: ['MZ', 'MG', 'TZ'], // island — nearest: Mozambique 290km, Madagascar 300km, Tanzania 530km
+    neighbors: ['MZ', 'MG', 'TZ', 'SC'], // island — nearest: Mozambique 290km, Madagascar 300km, Tanzania 530km, Seychelles 1100km
     coordinates: { lat: -11.6455, lng: 43.3333 },
   },
   {
@@ -1243,7 +1243,7 @@ export const countries: Country[] = [
     population: 1500000,
     primaryLanguage: 'Spanish',
     currency: 'Central African CFA Franc',
-    neighbors: ['CM', 'GA'],
+    neighbors: ['CM', 'GA', 'ST'],
     coordinates: { lat: 1.6508, lng: 10.2679 },
   },
   {
@@ -1288,7 +1288,7 @@ export const countries: Country[] = [
     population: 2300000,
     primaryLanguage: 'French',
     currency: 'Central African CFA Franc',
-    neighbors: ['CM', 'GQ', 'CG'],
+    neighbors: ['CM', 'GQ', 'CG', 'ST'],
     coordinates: { lat: -0.8037, lng: 11.6094 },
   },
   {
@@ -1388,7 +1388,7 @@ export const countries: Country[] = [
     population: 27700000,
     primaryLanguage: 'Malagasy',
     currency: 'Malagasy Ariary',
-    neighbors: ['MZ', 'TZ', 'KM', 'MU'], // island — nearest: Mozambique 400km, Tanzania 500km, Comoros 300km, Mauritius 900km
+    neighbors: ['MZ', 'TZ', 'KM', 'MU', 'SC'], // island — nearest: Mozambique 400km, Tanzania 500km, Comoros 300km, Mauritius 900km, Seychelles 1000km
     coordinates: { lat: -18.7669, lng: 46.8691 },
   },
   {
@@ -1432,7 +1432,7 @@ export const countries: Country[] = [
     population: 1300000,
     primaryLanguage: 'Mauritian Creole',
     currency: 'Mauritian Rupee',
-    neighbors: ['MG'], // island — nearest: Madagascar 900km
+    neighbors: ['MG', 'SC'], // island — nearest: Madagascar 900km, Seychelles 1700km
     coordinates: { lat: -20.3484, lng: 57.5522 },
   },
   {
@@ -1500,6 +1500,29 @@ export const countries: Country[] = [
     currency: 'Rwandan Franc',
     neighbors: ['CD', 'UG', 'TZ', 'BI'],
     coordinates: { lat: -1.9403, lng: 29.8739 },
+  },
+  {
+    name: 'São Tomé and Príncipe',
+    iso: 'ST',
+    capital: 'São Tomé',
+    continent: 'Africa',
+    population: 220000,
+    primaryLanguage: 'Portuguese',
+    currency: 'São Tomé and Príncipe Dobra',
+    neighbors: ['GA', 'GQ'], // island — nearest: Gabon 250km, Equatorial Guinea 200km
+    coordinates: { lat: 0.1864, lng: 6.6131 },
+    aliases: ['Sao Tome and Principe', 'Sao Tome', 'São Tomé'],
+  },
+  {
+    name: 'Seychelles',
+    iso: 'SC',
+    capital: 'Victoria',
+    continent: 'Africa',
+    population: 100000,
+    primaryLanguage: 'Seychellois Creole',
+    currency: 'Seychellois Rupee',
+    neighbors: ['MG', 'MU', 'KM'], // island — nearest: Madagascar 1000km, Comoros 1100km
+    coordinates: { lat: -4.6796, lng: 55.492 },
   },
   {
     name: 'Senegal',
@@ -1634,7 +1657,7 @@ export const countries: Country[] = [
     coordinates: { lat: -19.0154, lng: 29.1549 },
   },
 
-  // ─── AMERICAS (26) ──────────────────────────────────────────────────────────
+  // ─── AMERICAS (35) ──────────────────────────────────────────────────────────
   {
     name: 'Argentina',
     iso: 'AR',
@@ -1731,7 +1754,7 @@ export const countries: Country[] = [
     population: 11200000,
     primaryLanguage: 'Spanish',
     currency: 'Cuban Peso',
-    neighbors: ['JM', 'HT', 'US', 'MX'],
+    neighbors: ['JM', 'HT', 'US', 'MX', 'BS'],
     coordinates: { lat: 21.5218, lng: -77.7812 },
   },
   {
@@ -1797,7 +1820,7 @@ export const countries: Country[] = [
     population: 11400000,
     primaryLanguage: 'Haitian Creole',
     currency: 'Haitian Gourde',
-    neighbors: ['DO', 'JM', 'CU'],
+    neighbors: ['DO', 'JM', 'CU', 'BS'],
     coordinates: { lat: 18.9712, lng: -72.2852 },
   },
   {
@@ -1885,9 +1908,102 @@ export const countries: Country[] = [
     population: 1400000,
     primaryLanguage: 'English',
     currency: 'Trinidad and Tobago Dollar',
-    neighbors: ['VE'],
+    neighbors: ['VE', 'GD', 'BB'],
     coordinates: { lat: 10.6918, lng: -61.2225 },
     aliases: ['Trinidad', 'Trinidad & Tobago'],
+  },
+  {
+    name: 'Bahamas',
+    iso: 'BS',
+    capital: 'Nassau',
+    continent: 'Americas',
+    population: 400000,
+    primaryLanguage: 'English',
+    currency: 'Bahamian Dollar',
+    neighbors: ['US', 'CU', 'HT'], // island — nearest: USA (Florida) 80km, Cuba 90km, Haiti 100km
+    coordinates: { lat: 25.0343, lng: -77.3963 },
+    aliases: ['The Bahamas'],
+  },
+  {
+    name: 'Barbados',
+    iso: 'BB',
+    capital: 'Bridgetown',
+    continent: 'Americas',
+    population: 290000,
+    primaryLanguage: 'English',
+    currency: 'Barbadian Dollar',
+    neighbors: ['VC', 'LC', 'TT', 'GD'], // island — nearest: St Vincent 160km, St Lucia 210km, Trinidad 320km, Grenada 300km
+    coordinates: { lat: 13.1939, lng: -59.5432 },
+  },
+  {
+    name: 'Antigua and Barbuda',
+    iso: 'AG',
+    capital: "Saint John's",
+    continent: 'Americas',
+    population: 100000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['KN', 'DM'], // island — nearest: St Kitts 100km, Dominica 230km
+    coordinates: { lat: 17.0608, lng: -61.7964 },
+    aliases: ['Antigua', 'Antigua & Barbuda'],
+  },
+  {
+    name: 'Dominica',
+    iso: 'DM',
+    capital: 'Roseau',
+    continent: 'Americas',
+    population: 72000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['AG', 'LC', 'KN'], // island — nearest: Guadeloupe (FR) 50km, Martinique (FR) 40km, St Kitts 200km
+    coordinates: { lat: 15.415, lng: -61.371 },
+  },
+  {
+    name: 'Grenada',
+    iso: 'GD',
+    capital: "Saint George's",
+    continent: 'Americas',
+    population: 125000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['TT', 'VC', 'BB', 'VE'], // island — nearest: Trinidad 140km, St Vincent 120km, Venezuela 160km
+    coordinates: { lat: 12.1165, lng: -61.679 },
+  },
+  {
+    name: 'Saint Kitts and Nevis',
+    iso: 'KN',
+    capital: 'Basseterre',
+    continent: 'Americas',
+    population: 55000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['AG', 'DM'], // island — nearest: Antigua 100km
+    coordinates: { lat: 17.3578, lng: -62.783 },
+    aliases: ['St Kitts and Nevis', 'St Kitts', 'Saint Kitts', 'St Kitts & Nevis'],
+  },
+  {
+    name: 'Saint Lucia',
+    iso: 'LC',
+    capital: 'Castries',
+    continent: 'Americas',
+    population: 184000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['DM', 'VC', 'BB'], // island — nearest: Martinique (FR) 40km, St Vincent 50km
+    coordinates: { lat: 13.9094, lng: -60.9789 },
+    aliases: ['St Lucia'],
+  },
+  {
+    name: 'Saint Vincent and the Grenadines',
+    iso: 'VC',
+    capital: 'Kingstown',
+    continent: 'Americas',
+    population: 110000,
+    primaryLanguage: 'English',
+    currency: 'East Caribbean Dollar',
+    neighbors: ['LC', 'GD', 'BB'], // island — nearest: St Lucia 50km, Grenada 120km
+    coordinates: { lat: 13.2528, lng: -61.1971 },
+    aliases: ['St Vincent', 'Saint Vincent', 'St Vincent and the Grenadines'],
   },
   {
     name: 'United States',
@@ -1897,7 +2013,7 @@ export const countries: Country[] = [
     population: 331900000,
     primaryLanguage: 'English',
     currency: 'United States Dollar',
-    neighbors: ['CA', 'MX', 'RU', 'CU'],
+    neighbors: ['CA', 'MX', 'RU', 'CU', 'BS'],
     coordinates: { lat: 37.0902, lng: -95.7129 },
     aliases: ['USA', 'United States of America', 'America', 'US'],
   },
@@ -1920,11 +2036,11 @@ export const countries: Country[] = [
     population: 28700000,
     primaryLanguage: 'Spanish',
     currency: 'Venezuelan Bolívar',
-    neighbors: ['CO', 'BR', 'GY', 'TT'],
+    neighbors: ['CO', 'BR', 'GY', 'TT', 'GD'],
     coordinates: { lat: 6.4238, lng: -66.5897 },
   },
 
-  // ─── OCEANIA (6) ────────────────────────────────────────────────────────────
+  // ─── OCEANIA (14) ───────────────────────────────────────────────────────────
   {
     name: 'Australia',
     iso: 'AU',
@@ -1944,7 +2060,7 @@ export const countries: Country[] = [
     population: 930000,
     primaryLanguage: 'English',
     currency: 'Fijian Dollar',
-    neighbors: ['VU', 'SB', 'NZ'],
+    neighbors: ['VU', 'SB', 'NZ', 'WS', 'TO', 'TV'],
     coordinates: { lat: -17.7134, lng: 178.065 },
   },
   {
@@ -1955,7 +2071,7 @@ export const countries: Country[] = [
     population: 9900000,
     primaryLanguage: 'Tok Pisin',
     currency: 'Papua New Guinean Kina',
-    neighbors: ['AU', 'ID', 'SB'],
+    neighbors: ['AU', 'ID', 'SB', 'FM'],
     coordinates: { lat: -6.315, lng: 143.9555 },
     aliases: ['PNG'],
   },
@@ -1978,7 +2094,7 @@ export const countries: Country[] = [
     population: 720000,
     primaryLanguage: 'English',
     currency: 'Solomon Islands Dollar',
-    neighbors: ['PG', 'VU', 'FJ'],
+    neighbors: ['PG', 'VU', 'FJ', 'NR'],
     coordinates: { lat: -9.6457, lng: 160.1562 },
   },
   {
@@ -1991,6 +2107,95 @@ export const countries: Country[] = [
     currency: 'Vanuatu Vatu',
     neighbors: ['SB', 'FJ'],
     coordinates: { lat: -15.3767, lng: 166.9592 },
+  },
+  {
+    name: 'Samoa',
+    iso: 'WS',
+    capital: 'Apia',
+    continent: 'Oceania',
+    population: 220000,
+    primaryLanguage: 'Samoan',
+    currency: 'Samoan Tala',
+    neighbors: ['FJ', 'TO'], // island — nearest: Fiji 1100km, Tonga 800km
+    coordinates: { lat: -13.759, lng: -172.1046 },
+  },
+  {
+    name: 'Tonga',
+    iso: 'TO',
+    capital: "Nuku'alofa",
+    continent: 'Oceania',
+    population: 107000,
+    primaryLanguage: 'Tongan',
+    currency: 'Tongan Pa\'anga',
+    neighbors: ['FJ', 'WS'], // island — nearest: Fiji 750km, Samoa 800km
+    coordinates: { lat: -21.179, lng: -175.1982 },
+  },
+  {
+    name: 'Kiribati',
+    iso: 'KI',
+    capital: 'Tarawa',
+    continent: 'Oceania',
+    population: 120000,
+    primaryLanguage: 'Gilbertese',
+    currency: 'Australian Dollar',
+    neighbors: ['MH', 'NR', 'TV'], // island — nearest: Marshall Islands 900km, Nauru 600km, Tuvalu 500km
+    coordinates: { lat: 1.8709, lng: -157.3626 },
+  },
+  {
+    name: 'Marshall Islands',
+    iso: 'MH',
+    capital: 'Majuro',
+    continent: 'Oceania',
+    population: 42000,
+    primaryLanguage: 'Marshallese',
+    currency: 'United States Dollar',
+    neighbors: ['KI', 'FM'], // island — nearest: Kiribati 900km, Micronesia 800km
+    coordinates: { lat: 7.1315, lng: 171.1845 },
+  },
+  {
+    name: 'Micronesia',
+    iso: 'FM',
+    capital: 'Palikir',
+    continent: 'Oceania',
+    population: 115000,
+    primaryLanguage: 'English',
+    currency: 'United States Dollar',
+    neighbors: ['MH', 'PW', 'PG'], // island — nearest: Palau 900km, Marshall Islands 800km
+    coordinates: { lat: 7.4256, lng: 150.5508 },
+    aliases: ['Federated States of Micronesia', 'FSM'],
+  },
+  {
+    name: 'Nauru',
+    iso: 'NR',
+    capital: 'Yaren',
+    continent: 'Oceania',
+    population: 13000,
+    primaryLanguage: 'Nauruan',
+    currency: 'Australian Dollar',
+    neighbors: ['KI', 'SB'], // island — nearest: Kiribati 600km, Solomon Islands 1200km
+    coordinates: { lat: -0.5228, lng: 166.9315 },
+  },
+  {
+    name: 'Palau',
+    iso: 'PW',
+    capital: 'Ngerulmud',
+    continent: 'Oceania',
+    population: 18000,
+    primaryLanguage: 'Palauan',
+    currency: 'United States Dollar',
+    neighbors: ['FM', 'PH'], // island — nearest: Philippines 850km, Micronesia 900km
+    coordinates: { lat: 7.515, lng: 134.5825 },
+  },
+  {
+    name: 'Tuvalu',
+    iso: 'TV',
+    capital: 'Funafuti',
+    continent: 'Oceania',
+    population: 12000,
+    primaryLanguage: 'Tuvaluan',
+    currency: 'Australian Dollar',
+    neighbors: ['KI', 'FJ'], // island — nearest: Kiribati 500km, Fiji 1000km
+    coordinates: { lat: -7.1095, lng: 177.6493 },
   },
 
   {
