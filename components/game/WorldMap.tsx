@@ -104,7 +104,6 @@ export function WorldMap({
 }: WorldMapProps) {
   const [zoom, setZoom] = useState(1);
   const [center, setCenter] = useState<[number, number]>([10, 15]);
-  const [tooltip, setTooltip] = useState<{ name: string; x: number; y: number } | null>(null);
 
   // Track which countries were just conquered so we can pulse them
   const prevConqueredRef = useRef<Set<string>>(new Set());
@@ -286,19 +285,6 @@ export function WorldMap({
                     key={geo.rsmKey}
                     geography={geo}
                     onClick={() => handleCountryClick(numId)}
-                    onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
-                      if (state !== 'homeland' && state !== 'conquered') return;
-                      const name = iso ? (countriesByIso[iso]?.name ?? iso) : 'Unknown';
-                      const rect = (e.target as SVGPathElement)
-                        .closest('svg')
-                        ?.getBoundingClientRect();
-                      setTooltip({
-                        name,
-                        x: e.clientX - (rect?.left ?? 0),
-                        y: e.clientY - (rect?.top ?? 0),
-                      });
-                    }}
-                    onMouseLeave={() => setTooltip(null)}
                     style={{
                       default: {
                         fill: getFill(state),
@@ -367,21 +353,9 @@ export function WorldMap({
                   onClick={() => onCountryClick?.(iso)}
                   onMouseEnter={(e: React.MouseEvent<SVGCircleElement>) => {
                     (e.target as SVGCircleElement).setAttribute('fill', hoverFill);
-                    if (state === 'homeland' || state === 'conquered') {
-                      const name = country.name;
-                      const rect = (e.target as SVGCircleElement)
-                        .closest('svg')
-                        ?.getBoundingClientRect();
-                      setTooltip({
-                        name,
-                        x: e.clientX - (rect?.left ?? 0),
-                        y: e.clientY - (rect?.top ?? 0),
-                      });
-                    }
                   }}
                   onMouseLeave={(e: React.MouseEvent<SVGCircleElement>) => {
                     (e.target as SVGCircleElement).setAttribute('fill', fill);
-                    setTooltip(null);
                   }}
                 />
               </Marker>
@@ -480,16 +454,6 @@ export function WorldMap({
           })}
         </ZoomableGroup>
       </ComposableMap>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          className="pointer-events-none absolute z-20 rounded bg-gray-900 border border-gray-700 px-2 py-1 text-xs text-white shadow-lg"
-          style={{ left: tooltip.x + 10, top: tooltip.y - 28 }}
-        >
-          {tooltip.name}
-        </div>
-      )}
 
       {/* Zoom controls */}
       <div className="absolute right-3 top-3 flex flex-col gap-1 z-10">
