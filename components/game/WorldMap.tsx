@@ -287,6 +287,7 @@ export function WorldMap({
                     geography={geo}
                     onClick={() => handleCountryClick(numId)}
                     onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
+                      if (state !== 'homeland' && state !== 'conquered') return;
                       const name = iso ? (countriesByIso[iso]?.name ?? iso) : 'Unknown';
                       const rect = (e.target as SVGPathElement)
                         .closest('svg')
@@ -366,15 +367,17 @@ export function WorldMap({
                   onClick={() => onCountryClick?.(iso)}
                   onMouseEnter={(e: React.MouseEvent<SVGCircleElement>) => {
                     (e.target as SVGCircleElement).setAttribute('fill', hoverFill);
-                    const name = country.name;
-                    const rect = (e.target as SVGCircleElement)
-                      .closest('svg')
-                      ?.getBoundingClientRect();
-                    setTooltip({
-                      name,
-                      x: e.clientX - (rect?.left ?? 0),
-                      y: e.clientY - (rect?.top ?? 0),
-                    });
+                    if (state === 'homeland' || state === 'conquered') {
+                      const name = country.name;
+                      const rect = (e.target as SVGCircleElement)
+                        .closest('svg')
+                        ?.getBoundingClientRect();
+                      setTooltip({
+                        name,
+                        x: e.clientX - (rect?.left ?? 0),
+                        y: e.clientY - (rect?.top ?? 0),
+                      });
+                    }
                   }}
                   onMouseLeave={(e: React.MouseEvent<SVGCircleElement>) => {
                     (e.target as SVGCircleElement).setAttribute('fill', fill);
