@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Barlow } from 'next/font/google'
 import { SessionProvider } from '@/components/SessionProvider'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${cinzel.variable} ${barlow.variable}`}>
       <body>
         <SessionProvider>{children}</SessionProvider>
+        <Analytics />
       </body>
     </html>
   )
