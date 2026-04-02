@@ -242,11 +242,7 @@ function largestNeighborQuestion(country: Country, seed: number): TriviaQuestion
 
 /** "Is X an island nation?" — only generated for countries where the answer is interesting */
 function islandQuestion(country: Country, seed: number): TriviaQuestion | null {
-  // Only generate this for countries in regions where island status varies
-  const islandKeywords = ['island', 'archipelago'];
-  // Simple heuristic: if all neighbors are sea-connected (comments in data mention island)
-  // We'll just check if the country has very few land neighbors and is small
-  // For simplicity, use a curated set
+  // Curated set of island nations for generating island-related questions
   const knownIslands = new Set([
     'CY', 'IS', 'MT', 'CU', 'DO', 'HT', 'JM', 'TT', 'BS', 'BB', 'AG', 'DM', 'GD', 'KN', 'LC', 'VC',
     'SG', 'LK', 'MV', 'BH', 'TW', 'PH', 'ID', 'JP', 'BN', 'TL',
