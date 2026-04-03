@@ -16,6 +16,7 @@ import {
   createInitialGameState,
   checkNeighborGuess,
   getAvailableInvasionTargets,
+  isOnCooldown,
   type GameState,
   type GamePhase,
 } from '@/lib/game/engine';
@@ -32,13 +33,14 @@ import { generateTriviaQuestions } from '@/lib/game/trivia';
 import type { TriviaQuestion } from '@/lib/game/engine';
 
 // ── Continent metadata ─────────────────────────────────────────────────────
-const CONTINENT_ORDER: Continent[] = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
+const CONTINENT_ORDER: Continent[] = ['Africa', 'North America', 'South America', 'Asia', 'Europe', 'Oceania'];
 const CONTINENT_EMOJI: Record<Continent, string> = {
-  Africa:   '🌍',
-  Americas: '🌎',
-  Asia:     '🌏',
-  Europe:   '🏛️',
-  Oceania:  '🏝️',
+  'Africa':        '🌍',
+  'North America': '🌎',
+  'South America': '🌎',
+  'Asia':          '🌏',
+  'Europe':        '🏛️',
+  'Oceania':       '🏝️',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -209,7 +211,7 @@ export default function GamePage() {
     multiplier: number
   ): { earned: number; newBonuses: Set<string>; messages: string[] } {
     const territory = new Set([homeland, ...newConquered]);
-    const continents = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'] as const;
+    const continents = ['Africa', 'North America', 'South America', 'Asia', 'Europe', 'Oceania'] as const;
     let earned = 0;
     const newBonuses = new Set(currentBonuses);
     const messages: string[] = [];
@@ -234,6 +236,9 @@ export default function GamePage() {
       const result = checkNeighborGuess(guess, game.homeland, game.conquered, game.failed);
 
       if (!result.valid) {
+        const cooldownRemaining = result.country && result.reason === 'cooling-down'
+          ? 3 - (game.conquered.length - (game.failed[result.country.iso] ?? 0))
+          : 0;
         const msgs: Record<string, string> = {
           'not-found':        `"${guess}" is not a recognized country.`,
           'not-neighbor':     result.country
@@ -242,9 +247,9 @@ export default function GamePage() {
           'already-conquered': result.country
             ? `${result.country.name} is already part of your empire.`
             : 'Already conquered.',
-          'failed':           result.country
-            ? `${result.country.name} repelled your last invasion.`
-            : 'That country repelled your last invasion.',
+          'cooling-down':     result.country
+            ? `${result.country.name} is still recovering from your last invasion. Annex ${cooldownRemaining} more ${cooldownRemaining === 1 ? 'country' : 'countries'} first.`
+            : 'That country is still recovering from your last invasion.',
         };
 
         triggerShake();
@@ -339,7 +344,7 @@ export default function GamePage() {
 
         setGame((prev) => ({
           ...prev,
-          failed:        [...prev.failed, game.currentTarget!],
+          failed:        { ...prev.failed, [game.currentTarget!]: prev.conquered.length },
           score:         prev.score + triviaScore,
           lives,
           multiplier,
@@ -557,11 +562,18 @@ export default function GamePage() {
                       </p>
                     </div>
                   </div>
-                  {game.failed.length > 0 && (
-                    <p className="mt-2 text-[10px] text-game-red/70">
-                      {game.failed.length} failed invasion{game.failed.length > 1 ? 's' : ''} today
-                    </p>
-                  )}
+                  {Object.keys(game.failed).length > 0 && (() => {
+                    const onCooldown = Object.keys(game.failed).filter(
+                      (iso) => isOnCooldown(iso, game.failed, game.conquered.length)
+                    ).length;
+                    const total = Object.keys(game.failed).length;
+                    return (
+                      <p className="mt-2 text-[10px] text-game-red/70">
+                        {total} failed invasion{total > 1 ? 's' : ''} today
+                        {onCooldown > 0 && ` · ${onCooldown} on cooldown`}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 {/* Country input */}

@@ -16,7 +16,7 @@ export interface TriviaQuestion {
 export interface GameState {
   homeland: string;       // ISO code
   conquered: string[];    // ISO codes
-  failed: string[];       // ISO codes of failed invasions (not eligible this session)
+  failed: Record<string, number>;  // ISO → conquered count at time of failure (unlocks after 3 more annexations)
   score: number;
   multiplier: number;
   streak: number;
@@ -28,7 +28,7 @@ export interface GameState {
 
 export type GuessResult =
   | { valid: true; country: Country }
-  | { valid: false; country: Country | null; reason: 'not-found' | 'already-conquered' | 'not-neighbor' | 'failed' };
+  | { valid: false; country: Country | null; reason: 'not-found' | 'already-conquered' | 'not-neighbor' | 'failed' | 'cooling-down' };
 
 // ── Daily seed ─────────────────────────────────────────────────────────────
 
@@ -73,24 +73,32 @@ export function getTerritory(homeland: string, conquered: string[]): Set<string>
   return new Set([homeland, ...conquered]);
 }
 
+/** Number of successful annexations required before a failed country becomes available again. */
+const FAILED_COOLDOWN = 3;
+
+/** Returns true if a failed country is still on cooldown. */
+export function isOnCooldown(iso: string, failed: Record<string, number>, conqueredCount: number): boolean {
+  if (!(iso in failed)) return false;
+  return conqueredCount - failed[iso] < FAILED_COOLDOWN;
+}
+
 /**
- * Returns all countries that border the player's territory and have not yet
- * been conquered or attempted (and failed) this session.
+ * Returns all countries that border the player's territory and are not
+ * on cooldown from a recent failed invasion.
  */
 export function getAvailableInvasionTargets(
   homeland: string,
   conquered: string[],
-  failed: string[]
+  failed: Record<string, number>
 ): Country[] {
   const territory = getTerritory(homeland, conquered);
-  const failedSet = new Set(failed);
   const available = new Set<string>();
 
   for (const iso of territory) {
     const country = countriesByIso[iso];
     if (!country) continue;
     for (const neighborIso of country.neighbors) {
-      if (!territory.has(neighborIso) && !failedSet.has(neighborIso)) {
+      if (!territory.has(neighborIso) && !isOnCooldown(neighborIso, failed, conquered.length)) {
         available.add(neighborIso);
       }
     }
@@ -109,7 +117,7 @@ export function checkNeighborGuess(
   guess: string,
   homeland: string,
   conquered: string[],
-  failed: string[]
+  failed: Record<string, number>
 ): GuessResult {
   const normalised = guess.trim().toLowerCase();
   const country = countriesByName[normalised]
@@ -122,8 +130,8 @@ export function checkNeighborGuess(
     return { valid: false, country, reason: 'already-conquered' };
   }
 
-  if (new Set(failed).has(country.iso)) {
-    return { valid: false, country, reason: 'failed' };
+  if (isOnCooldown(country.iso, failed, conquered.length)) {
+    return { valid: false, country, reason: 'cooling-down' };
   }
 
   const available = getAvailableInvasionTargets(homeland, conquered, failed);
@@ -148,7 +156,7 @@ export function createInitialGameState(date?: Date): GameState {
   return {
     homeland: getDailyCountry(d).iso,
     conquered: [],
-    failed: [],
+    failed: {},
     score: 0,
     multiplier: STARTING_MULTIPLIER,
     streak: 0,

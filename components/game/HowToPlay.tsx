@@ -82,7 +82,7 @@ export function HowToPlay({ onClose }: HowToPlayProps) {
               homeland or any country you&apos;ve already conquered.
             </Rule>
             <Rule>As you conquer more, your borders expand and new neighbors become reachable.</Rule>
-            <Rule>Countries you&apos;ve previously failed to invade cannot be retried in the same session.</Rule>
+            <Rule>Failed invasions go on cooldown — annex 3 more countries before you can retry them.</Rule>
           </Section>
 
           <div className="border-t border-game-border/60" />

@@ -68,7 +68,7 @@ function capitalQuestion(country: Country, seed: number): TriviaQuestion {
 }
 
 function continentQuestion(country: Country, seed: number): TriviaQuestion {
-  const allContinents: Continent[] = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
+  const allContinents: Continent[] = ['Africa', 'North America', 'South America', 'Asia', 'Europe', 'Oceania'];
   const wrong = seededShuffle(
     allContinents.filter((c) => c !== country.continent),
     seed
@@ -267,7 +267,7 @@ function islandQuestion(country: Country, seed: number): TriviaQuestion | null {
     return {
       id: `${country.iso}-island`,
       type: 'island',
-      question: `Which of these ${country.continent === 'Americas' ? 'American' : country.continent === 'Oceania' ? 'Oceanian' : country.continent + 'n'} countries is an island nation?`,
+      question: `Which of these ${country.continent === 'North America' || country.continent === 'South America' ? 'American' : country.continent === 'Oceania' ? 'Oceanian' : country.continent + 'n'} countries is an island nation?`,
       choices,
       correctAnswer: country.name,
     };
