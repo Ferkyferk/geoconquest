@@ -61,7 +61,7 @@ describe('country data integrity', () => {
 describe('getAvailableInvasionTargets', () => {
   test('returns all neighbors of homeland when nothing is conquered', () => {
     const france = countriesByIso['FR'];
-    const targets = getAvailableInvasionTargets('FR', [], []);
+    const targets = getAvailableInvasionTargets('FR', [], {});
     const targetIsos = targets.map((c) => c.iso);
     // France borders: BE, LU, DE, CH, IT, MC, ES, AD, GB
     for (const n of france.neighbors) {
@@ -70,18 +70,24 @@ describe('getAvailableInvasionTargets', () => {
   });
 
   test('excludes already-conquered countries', () => {
-    const targets = getAvailableInvasionTargets('FR', ['DE'], []);
+    const targets = getAvailableInvasionTargets('FR', ['DE'], {});
     expect(targets.map((c) => c.iso)).not.toContain('DE');
   });
 
-  test('excludes failed countries', () => {
-    const targets = getAvailableInvasionTargets('FR', [], ['BE']);
+  test('excludes failed countries on cooldown', () => {
+    const targets = getAvailableInvasionTargets('FR', [], { BE: 0 });
     expect(targets.map((c) => c.iso)).not.toContain('BE');
+  });
+
+  test('failed country becomes available after 3 conquests', () => {
+    // Failed at conquered count 0, now conquered 3 countries
+    const targets = getAvailableInvasionTargets('FR', ['DE', 'IT', 'CH'], { BE: 0 });
+    expect(targets.map((c) => c.iso)).toContain('BE');
   });
 
   test('expands territory when a neighbor is conquered', () => {
     // Conquer Germany (DE) — should now also surface DE's neighbors
-    const targets = getAvailableInvasionTargets('FR', ['DE'], []);
+    const targets = getAvailableInvasionTargets('FR', ['DE'], {});
     const de = countriesByIso['DE'];
     // Poland (PL) is a neighbor of DE but not FR — should now be available
     expect(de.neighbors).toContain('PL');
@@ -89,13 +95,13 @@ describe('getAvailableInvasionTargets', () => {
   });
 
   test('does not include homeland in results', () => {
-    const targets = getAvailableInvasionTargets('FR', ['DE'], []);
+    const targets = getAvailableInvasionTargets('FR', ['DE'], {});
     expect(targets.map((c) => c.iso)).not.toContain('FR');
   });
 
   test('Iceland is reachable via sea connections to Norway and UK', () => {
     // Iceland was given sea connections (NO, GB) during the island-connectivity pass
-    const targets = getAvailableInvasionTargets('IS', [], []);
+    const targets = getAvailableInvasionTargets('IS', [], {});
     const isos = targets.map((c) => c.iso);
     expect(isos).toContain('NO');
     expect(isos).toContain('GB');
@@ -103,12 +109,12 @@ describe('getAvailableInvasionTargets', () => {
 
   test('sea-connected countries are reachable', () => {
     // GB-FR sea connection
-    const fromGB = getAvailableInvasionTargets('GB', [], []);
+    const fromGB = getAvailableInvasionTargets('GB', [], {});
     expect(fromGB.map((c) => c.iso)).toContain('FR');
     expect(fromGB.map((c) => c.iso)).toContain('IE');
 
     // JP-KR and JP-RU sea connections
-    const fromJP = getAvailableInvasionTargets('JP', [], []);
+    const fromJP = getAvailableInvasionTargets('JP', [], {});
     expect(fromJP.map((c) => c.iso)).toContain('KR');
     expect(fromJP.map((c) => c.iso)).toContain('RU');
   });
@@ -118,64 +124,69 @@ describe('getAvailableInvasionTargets', () => {
 
 describe('checkNeighborGuess', () => {
   test('valid guess returns { valid: true }', () => {
-    const result = checkNeighborGuess('Germany', 'FR', [], []);
+    const result = checkNeighborGuess('Germany', 'FR', [], {});
     expect(result.valid).toBe(true);
     if (result.valid) expect(result.country.iso).toBe('DE');
   });
 
   test('is case-insensitive', () => {
-    expect(checkNeighborGuess('germany', 'FR', [], []).valid).toBe(true);
-    expect(checkNeighborGuess('GERMANY', 'FR', [], []).valid).toBe(true);
-    expect(checkNeighborGuess('GerManY', 'FR', [], []).valid).toBe(true);
+    expect(checkNeighborGuess('germany', 'FR', [], {}).valid).toBe(true);
+    expect(checkNeighborGuess('GERMANY', 'FR', [], {}).valid).toBe(true);
+    expect(checkNeighborGuess('GerManY', 'FR', [], {}).valid).toBe(true);
   });
 
   test('trims whitespace', () => {
-    expect(checkNeighborGuess('  Germany  ', 'FR', [], []).valid).toBe(true);
+    expect(checkNeighborGuess('  Germany  ', 'FR', [], {}).valid).toBe(true);
   });
 
   test('unknown country returns not-found', () => {
-    const result = checkNeighborGuess('Narnia', 'FR', [], []);
+    const result = checkNeighborGuess('Narnia', 'FR', [], {});
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.reason).toBe('not-found');
   });
 
   test('already-conquered country returns already-conquered', () => {
-    const result = checkNeighborGuess('Germany', 'FR', ['DE'], []);
+    const result = checkNeighborGuess('Germany', 'FR', ['DE'], {});
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.reason).toBe('already-conquered');
   });
 
   test('homeland itself returns already-conquered', () => {
-    const result = checkNeighborGuess('France', 'FR', [], []);
+    const result = checkNeighborGuess('France', 'FR', [], {});
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.reason).toBe('already-conquered');
   });
 
   test('non-neighboring country returns not-neighbor', () => {
     // Japan has no connection to France (direct or via conquered territory)
-    const result = checkNeighborGuess('Japan', 'FR', [], []);
+    const result = checkNeighborGuess('Japan', 'FR', [], {});
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.reason).toBe('not-neighbor');
   });
 
-  test('failed country returns failed', () => {
-    const result = checkNeighborGuess('Germany', 'FR', [], ['DE']);
+  test('failed country on cooldown returns cooling-down', () => {
+    const result = checkNeighborGuess('Germany', 'FR', [], { DE: 0 });
     expect(result.valid).toBe(false);
-    if (!result.valid) expect(result.reason).toBe('failed');
+    if (!result.valid) expect(result.reason).toBe('cooling-down');
+  });
+
+  test('failed country becomes valid after 3 conquests', () => {
+    const result = checkNeighborGuess('Belgium', 'FR', ['DE', 'IT', 'CH'], { BE: 0 });
+    expect(result.valid).toBe(true);
   });
 
   test('neighbor becomes valid after territory expands', () => {
     // Poland is not a neighbor of France, but is after Germany is conquered
-    const beforeConquest = checkNeighborGuess('Poland', 'FR', [], []);
+    const beforeConquest = checkNeighborGuess('Poland', 'FR', [], {});
     expect(beforeConquest.valid).toBe(false);
 
-    const afterConquest = checkNeighborGuess('Poland', 'FR', ['DE'], []);
+    const afterConquest = checkNeighborGuess('Poland', 'FR', ['DE'], {});
     expect(afterConquest.valid).toBe(true);
   });
 
   test('enclave countries reachable from surrounding nation', () => {
     // San Marino and Vatican are surrounded by Italy
-    const targets = getAvailableInvasionTargets('IT', [], []);
+    const targets = getAvailableInvasionTargets('IT', [], {});
     const isos = targets.map((c) => c.iso);
     expect(isos).toContain('SM');
     expect(isos).toContain('VA');
