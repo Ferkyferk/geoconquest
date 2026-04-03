@@ -105,7 +105,21 @@ export async function POST(req: Request) {
         create: { userId, rating: newRating, gamesPlayed: 1 },
       })
 
-      return { gameSession, skillRating, prevRating: currentRating }
+      // 4 ── Update daily play streak
+      const player = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { currentStreak: true, lastPlayedDate: true } })
+      let newStreak = player.currentStreak
+      if (player.lastPlayedDate !== date) {
+        const yesterday = new Date()
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+        const yesterdayStr = yesterday.toISOString().split('T')[0]
+        newStreak = player.lastPlayedDate === yesterdayStr ? player.currentStreak + 1 : 1
+        await tx.user.update({
+          where: { id: userId },
+          data: { currentStreak: newStreak, lastPlayedDate: date },
+        })
+      }
+
+      return { gameSession, skillRating, prevRating: currentRating, dailyStreak: newStreak }
     })
 
     return ok({
@@ -113,6 +127,7 @@ export async function POST(req: Request) {
       newRating:    result.skillRating.rating,
       ratingDelta:  result.skillRating.rating - result.prevRating,
       gamesPlayed:  result.skillRating.gamesPlayed,
+      dailyStreak:  result.dailyStreak,
     })
   } catch (err) {
     return serverError(err)

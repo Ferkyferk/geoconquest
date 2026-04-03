@@ -97,6 +97,7 @@ export default function GamePage() {
   // Extra state not in GameState
   const [triviaQuestions, setTriviaQuestions] = useState<TriviaQuestion[]>([]);
   const [continentBonuses, setContinentBonuses] = useState<Set<string>>(new Set());
+  const [dailyStreak, setDailyStreak] = useState(0);
 
   // ── UI state ─────────────────────────────────────────────────────────────
   const [inputValue, setInputValue]   = useState('');
@@ -140,6 +141,15 @@ export default function GamePage() {
     }
     return groups;
   }, [game.homeland, game.conquered]);
+
+  // ── Fetch daily streak on mount ────────────────────────────────────────────
+  useEffect(() => {
+    if (!authSession?.user?.id) return;
+    fetch('/api/user/streak')
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setDailyStreak(res.data.dailyStreak); })
+      .catch(() => {});
+  }, [authSession?.user?.id]);
 
   // ── Score pop animation ───────────────────────────────────────────────────
   useEffect(() => {
@@ -188,7 +198,10 @@ export default function GamePage() {
         maxMultiplier: game.multiplier,
         maxStreak: game.streak,
       }),
-    }).catch(() => {}); // fire-and-forget; failure is silent
+    })
+      .then((r) => r.json())
+      .then((res) => { if (res.success && res.data.dailyStreak) setDailyStreak(res.data.dailyStreak); })
+      .catch(() => {});
   }, [game.phase, authSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Message helpers ───────────────────────────────────────────────────────
@@ -714,6 +727,8 @@ export default function GamePage() {
             continentBonuses={continentBonuses}
             multiplier={game.multiplier}
             streak={game.streak}
+            homeland={game.homeland}
+            dailyStreak={dailyStreak}
             onNewConquest={handleNewGame}
             onLeaderboard={() => router.push('/leaderboard')}
             onMainMenu={() => router.push('/')}

@@ -17,7 +17,7 @@ export async function GET() {
   const userId = user.id
 
   try {
-    const [sessions, skillRating] = await Promise.all([
+    const [sessions, skillRating, player] = await Promise.all([
       prisma.gameSession.findMany({
         where:   { userId },
         orderBy: { createdAt: 'desc' },
@@ -34,6 +34,7 @@ export async function GET() {
         },
       }),
       prisma.skillRating.findUnique({ where: { userId } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { currentStreak: true, lastPlayedDate: true } }),
     ])
 
     const totalGames = sessions.length
@@ -65,11 +66,21 @@ export async function GET() {
       playedAt:            s.createdAt,
     }))
 
+    // Compute whether the streak is still active (played today or yesterday)
+    const todayStr = new Date().toISOString().split('T')[0]
+    const yesterday = new Date()
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    const lastPlayed = player?.lastPlayedDate
+    const streakActive = lastPlayed === todayStr || lastPlayed === yesterdayStr
+    const dailyStreak = streakActive ? (player?.currentStreak ?? 0) : 0
+
     return ok({
       totalGames,
       avgScore,
       bestScore,
       totalCountriesConquered,
+      dailyStreak,
       skillRating: {
         rating:      Math.round(currentRating),
         gamesPlayed: skillRating?.gamesPlayed ?? 0,

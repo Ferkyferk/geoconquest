@@ -55,6 +55,8 @@ model User {
   name          String?
   image         String?
   provider      String    @default("google")
+  currentStreak Int       @default(0)
+  lastPlayedDate String?  // ISO YYYY-MM-DD — used to compute streak continuity
   createdAt     DateTime  @default(now())
 
   accounts     Account[]

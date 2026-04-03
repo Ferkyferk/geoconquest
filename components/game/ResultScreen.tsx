@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { countriesByIso, countries } from '@/lib/data/countries';
 import { AnimatedNumber } from '@/components/game/AnimatedNumber';
@@ -49,6 +50,47 @@ function Stat({
   );
 }
 
+// ── Share text builder ───────────────────────────────────────────────────────
+function buildShareText(
+  homeland: string,
+  score: number,
+  conquered: string[],
+  continentBonuses: Set<string>,
+  multiplier: number,
+  streak: number,
+  dailyStreak: number,
+): string {
+  const homelandCountry = countriesByIso[homeland];
+  const homelandName = homelandCountry?.name ?? homeland;
+  const total = countries.length;
+  const date = new Date().toLocaleDateString('en-US', { dateStyle: 'medium' });
+  const tier = performanceTier(conquered.length, total);
+
+  const lines: string[] = [
+    `${tier.icon} GeoConquest — ${date}`,
+    '',
+    `Started in ${homelandName}`,
+    `Conquered ${conquered.length + 1}/${total} countries`,
+  ];
+
+  if (continentBonuses.size > 0) {
+    const continents = [...continentBonuses].join(', ');
+    lines.push(`Continents: ${continents}`);
+  }
+
+  lines.push('');
+  lines.push(`Score: ${score.toLocaleString()} | x${multiplier.toFixed(1)} | Streak ${streak}`);
+
+  if (dailyStreak > 0) {
+    lines.push(`Daily streak: ${dailyStreak} day${dailyStreak === 1 ? '' : 's'}`);
+  }
+
+  lines.push('');
+  lines.push('Play at geoconquest.vercel.app');
+
+  return lines.join('\n');
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface ResultScreenProps {
   score: number;
@@ -56,6 +98,8 @@ export interface ResultScreenProps {
   continentBonuses: Set<string>;
   multiplier: number;
   streak: number;
+  homeland: string;
+  dailyStreak: number;
   onNewConquest: () => void;
   onLeaderboard: () => void;
   onMainMenu: () => void;
@@ -68,6 +112,8 @@ export function ResultScreen({
   continentBonuses,
   multiplier,
   streak,
+  homeland,
+  dailyStreak,
   onNewConquest,
   onLeaderboard,
   onMainMenu,
@@ -75,6 +121,15 @@ export function ResultScreen({
   const total = countries.length;
   const tier  = performanceTier(conquered.length, total);
   const date  = new Date().toLocaleDateString('en-US', { dateStyle: 'long' });
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = useCallback(() => {
+    const text = buildShareText(homeland, score, conquered, continentBonuses, multiplier, streak, dailyStreak);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [homeland, score, conquered, continentBonuses, multiplier, streak, dailyStreak]);
 
   return (
     <motion.div
@@ -127,11 +182,12 @@ export function ResultScreen({
         </div>
 
         {/* ── Stats grid ── */}
-        <div className="px-6 pt-4 grid grid-cols-4 gap-2">
+        <div className="px-6 pt-4 grid grid-cols-5 gap-2">
           <Stat label="Countries" value={String(conquered.length + 1)} accent delay={0.35} />
           <Stat label="Continents" value={String(continentBonuses.size)} delay={0.42} />
-          <Stat label="×Multiplier" value={`×${multiplier.toFixed(1)}`} delay={0.49} />
+          <Stat label="Mult" value={`×${multiplier.toFixed(1)}`} delay={0.49} />
           <Stat label="Streak" value={String(streak)} delay={0.56} />
+          <Stat label="Daily" value={dailyStreak > 0 ? `${dailyStreak}d` : '—'} delay={0.63} />
         </div>
 
         {/* ── Conquered countries ── */}
@@ -180,16 +236,31 @@ export function ResultScreen({
 
         {/* ── Actions ── */}
         <div className="px-6 py-5 flex flex-col gap-2 mt-2">
-          <button
-            onClick={onNewConquest}
-            className="
-              w-full rounded-xl bg-game-gold hover:bg-game-gold-lt
-              py-3 font-cinzel font-bold tracking-widest text-sm text-game-bg uppercase
-              transition-colors focus:outline-none focus:ring-2 focus:ring-game-gold/50
-            "
-          >
-            ⚔ New Conquest
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onNewConquest}
+              className="
+                rounded-xl bg-game-gold hover:bg-game-gold-lt
+                py-3 font-cinzel font-bold tracking-widest text-sm text-game-bg uppercase
+                transition-colors focus:outline-none focus:ring-2 focus:ring-game-gold/50
+              "
+            >
+              New Conquest
+            </button>
+            <button
+              onClick={handleShare}
+              className={`
+                rounded-xl py-3 font-cinzel font-bold tracking-widest text-sm uppercase
+                transition-colors focus:outline-none focus:ring-2 focus:ring-game-green/50
+                ${copied
+                  ? 'bg-game-green text-game-bg'
+                  : 'border border-game-green/40 bg-game-green/10 text-game-green hover:bg-game-green/20'
+                }
+              `}
+            >
+              {copied ? 'Copied!' : 'Share'}
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onLeaderboard}
@@ -200,7 +271,7 @@ export function ResultScreen({
                 transition-colors focus:outline-none
               "
             >
-              🏅 Leaderboard
+              Leaderboard
             </button>
             <button
               onClick={onMainMenu}
@@ -211,7 +282,7 @@ export function ResultScreen({
                 transition-colors focus:outline-none
               "
             >
-              ← Main Menu
+              Main Menu
             </button>
           </div>
         </div>
